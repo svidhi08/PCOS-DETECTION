@@ -21,7 +21,7 @@
 <h2>🔬 Ultrasound Image Model</h2>
 
 <ul>
-  <li><strong>Models Tested:</strong> Custom CNN, VGG16, MobileNet</li>
+  <li><strong>Models Tested:</strong> Custom CNN, MobileNet</li>
   <li><strong>Final Model Selected:</strong> MobileNet (Transfer Learning)</li>
   <li><strong>Training Accuracy:</strong> ~94%</li>
   <li><strong>Validation Accuracy:</strong> ~91%</li>
