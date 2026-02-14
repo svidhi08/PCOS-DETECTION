@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+
+<div id="crousel-container">
+    <div id="carouselExampleSlidesOnly" class="carousel slide" data-bs-ride="carousel">
+        <div class="carousel-inner">
+            <div class="carousel-item active">
+                <img src="{{ url_for('static', filename='images/docpatient.jpg') }}" class="d-block w-100" alt="Healthcare Professional">
+            </div>
+        </div>
+    </div>
+    <div>
+        <h1>Empowering Women Through <br> Advanced PCOS Diagnostics</h1>
+    </div>
+</div>
+
+<div class="info-section">
+    <div class="info-cards">
+        <div class="info-card">
+            <div class="info-icon">🩺</div>
+            <h3>Understanding PCOS</h3>
+            <p>Polycystic Ovary Syndrome (PCOS) is a complex endocrine disorder affecting 1 in 10 women globally. Early detection is critical for managing long-term reproductive and metabolic health.</p>
+        </div>
+        <div class="info-card">
+            <div class="info-icon">🔬</div>
+            <h3>AI-Driven Analysis</h3>
+            <p>Utilizing state-of-the-art Deep Learning, our system analyzes ultrasound scans to provide immediate screening results with high precision and clinical reliability.</p>
+        </div>
+        <div class="info-card">
+            <div class="info-icon">📈</div>
+            <h3>Proactive Care</h3>
+            <p>Early diagnosis allows for personalized lifestyle interventions and medical guidance. We bridge the gap between initial concern and clinical consultation.</p>
+        </div>
+    </div>
+</div>
+
+<h2 id="heading">Clinical Screening Tool</h2>
+
+<div id="main-part" class="container">
+    <form id="upload-file" method="post" enctype="multipart/form-data">
+        <label for="imageUpload" class="upload-label">
+            <h4 style="color: white;">Upload Pelvic Ultrasound Scan (JPG/PNG)</h4>
+            <p style="color: rgba(255,255,255,0.6);">Supported formats: .jpg, .jpeg, .png</p>
+        </label>
+        <input type="file" name="file" id="imageUpload" accept=".png, .jpg, .jpeg" style="display: none;">
+    </form>
+
+    <div class="image-section mt-4">
+        <div class="img-preview mb-4">
+            <div id="imagePreview">
+                <span style="color: rgba(255,255,255,0.5);">Awaiting scan upload...</span>
+            </div>
+        </div>
+        <div class="result-section text-center">
+            <button type="button" class="btn btn-primary btn-lg" id="btn-predict">Analyze Results</button>
+            <div class="loader mt-4" style="display:none; margin: 0 auto;"></div>
+            <div id="result" class="mt-4"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Preview Logic
+    document.getElementById('imageUpload').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const preview = document.getElementById('imagePreview');
+                preview.innerHTML = `<img src="${event.target.result}" alt="Preview">`;
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+
+    // Prediction Logic
+    document.getElementById('btn-predict').addEventListener('click', function() {
+        const fileInput = document.getElementById('imageUpload');
+        const file = fileInput.files[0];
+
+        if (!file) {
+            alert('Please select a scan for analysis.');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        document.querySelector('.loader').style.display = 'block';
+        document.getElementById('result').innerHTML = '';
+
+        fetch('/predict', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            document.querySelector('.loader').style.display = 'none';
+            
+            // Build Clinical Result Display
+            let resultHTML = `
+                <div class="p-4 rounded-4" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);">
+                    <h2 style="color: ${data.color || 'white'}; font-weight: 800;">${data.result}</h2>
+                    <span class="badge bg-light text-dark mb-3">Confidence Level: ${data.confidence}</span>
+                    <p class="text-white opacity-75">${data.message}</p>
+                </div>
+            `;
+            document.getElementById('result').innerHTML = resultHTML;
+        })
+        .catch(err => {
+            document.querySelector('.loader').style.display = 'none';
+            console.error(err);
+        });
+    });
+</script>
+{% endblock %}

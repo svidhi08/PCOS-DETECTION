@@ -1,0 +1,156 @@
+/* --- Global Styles --- */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    min-height: 100vh;
+    display: flex;              /* IMPORTANT */
+    flex-direction: column;     /* IMPORTANT */
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    position: relative;
+    overflow-x: hidden;
+    color: white;
+    padding-top: 70px;
+}
+
+/* --- Smaller Animated Background Blobs --- */
+body::before,
+body::after {
+    content: '';
+    position: fixed;
+    border-radius: 50%;
+    z-index: -1;
+}
+
+body::before {
+    width: 250px;   /* reduced */
+    height: 250px;
+    background: rgba(255, 255, 255, 0.06);
+    top: -80px;
+    right: -80px;
+    animation: float 8s ease-in-out infinite;
+}
+
+body::after {
+    width: 180px;   /* reduced */
+    height: 180px;
+    background: rgba(255, 255, 255, 0.05);
+    bottom: -60px;
+    left: -60px;
+    animation: float 10s ease-in-out infinite reverse;
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0px) translateX(0px); }
+    50% { transform: translateY(-20px) translateX(20px); }
+}
+
+/* --- Glassy Navbar --- */
+.navbar {
+    background: rgba(255, 255, 255, 0.1) !important;
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    z-index: 1050;
+}
+
+.navbar-brand {
+    font-size: 1.5rem !important;
+    font-weight: 800 !important;
+    letter-spacing: 1px;
+    color: white !important;
+}
+#content {
+    flex: 1;   /* pushes footer to bottom */
+}
+
+/* --- Hero Section --- */
+#hero-banner {
+    position: relative;
+    width: 100%;
+    margin-top: 0 !important;
+    line-height: 0;
+}
+
+.main-hero-img {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
+.hero-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    width: 100%;
+    line-height: normal;
+}
+
+/* --- Glass Panel --- */
+.glass-panel {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 20px;
+    padding: 25px;
+}
+
+/* --- Progress Bar --- */
+.progress {
+    height: 22px !important;
+    background-color: rgba(255, 255, 255, 0.15) !important;
+    border-radius: 50px !important;
+    margin: 20px 0;
+    overflow: hidden;
+}
+
+.progress-bar {
+    transition: width 1.5s cubic-bezier(0.1, 0, 0.1, 1);
+    font-weight: bold;
+}
+
+/* --- Loader --- */
+.loader {
+    width: 40px;
+    height: 40px;
+    border: 4px solid rgba(255, 255, 255, 0.1);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 1s infinite linear;
+    margin: 20px auto;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* --- Compact Footer --- */
+footer {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    padding: 15px 0;   /* reduced from 40px */
+    text-align: center;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+footer h5 {
+    margin-bottom: 8px;
+    font-size: 1rem;
+}
+
+footer img {
+    width: 35px;   /* smaller GitHub logo */
+    height: auto;
+    transition: transform 0.3s ease;
+}
+
+footer img:hover {
+    transform: scale(1.1);
+}

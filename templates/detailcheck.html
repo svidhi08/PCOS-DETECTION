@@ -1,0 +1,213 @@
+{% extends "base.html" %} 
+
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/detailcheck.css') }}">
+
+<div class="detail-check-container">
+    <div class="page-header">
+        <h1>🩺 Your Personal Health Check</h1>
+        <p>Answer a few quick questions to understand your PCOS risk better.<br>It takes just 2 minutes!</p>
+    </div>
+
+    <form id="healthForm" class="questionnaire-form">
+        <div class="section">
+            <h2 class="section-title">🗓️ About Your Periods</h2>
+            <div class="question">
+                <label class="question-label">Q1. How often do you get your period?</label>
+                <div class="options">
+                    <div class="option">
+                        <input type="radio" name="cycle_pattern" value="regular" id="cycle_regular">
+                        <label for="cycle_regular">Regular - Every 21 to 35 days (clockwork!)</label>
+                    </div>
+                    <div class="option">
+                        <input type="radio" name="cycle_pattern" value="irregular" id="cycle_irregular">
+                        <label for="cycle_irregular">Irregular - More than 35 days apart (unpredictable)</label>
+                    </div>
+                    <div class="option">
+                        <input type="radio" name="cycle_pattern" value="rare" id="cycle_rare">
+                        <label for="cycle_rare">Rare - Less than 8 times a year</label>
+                    </div>
+                    <div class="option">
+                        <input type="radio" name="cycle_pattern" value="absent" id="cycle_absent">
+                        <label for="cycle_absent">Absent - No period for 90+ days</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="question">
+                <label class="question-label">Q2. If irregular, how long has it been like this?</label>
+                <div class="options">
+                    <div class="option">
+                        <input type="radio" name="irregular_duration" value="short" id="duration_short">
+                        <label for="duration_short">Less than 6 months</label>
+                    </div>
+                    <div class="option">
+                        <input type="radio" name="irregular_duration" value="medium" id="duration_medium">
+                        <label for="duration_medium">6 months to 2 years</label>
+                    </div>
+                    <div class="option">
+                        <input type="radio" name="irregular_duration" value="long" id="duration_long">
+                        <label for="duration_long">More than 2 years</label>
+                    </div>
+                    <div class="option">
+                        <input type="radio" name="irregular_duration" value="na" id="duration_na">
+                        <label for="duration_na">Not applicable - My periods are regular</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">💁‍♀️ Physical Changes</h2>
+            <div class="question">
+                <label class="question-label">Q3. Do you have excessive hair growth on face, chest, or back?</label>
+                <div class="options">
+                    <div class="option"><input type="radio" name="hirsutism" value="yes_significant" id="hair_sig"><label for="hair_sig">Yes, quite noticeable</label></div>
+                    <div class="option"><input type="radio" name="hirsutism" value="yes_mild" id="hair_mild"><label for="hair_mild">Yes, but mild</label></div>
+                    <div class="option"><input type="radio" name="hirsutism" value="no" id="hair_no"><label for="hair_no">No, nothing unusual</label></div>
+                </div>
+            </div>
+
+            <div class="question">
+                <label class="question-label">Q4. Do you struggle with acne or very oily skin?</label>
+                <div class="options">
+                    <div class="option"><input type="radio" name="acne" value="yes_severe" id="acne_s"><label for="acne_s">Yes, severe acne</label></div>
+                    <div class="option"><input type="radio" name="acne" value="yes_moderate" id="acne_m"><label for="acne_m">Yes, moderate</label></div>
+                    <div class="option"><input type="radio" name="acne" value="no" id="acne_n"><label for="acne_n">No, skin is clear</label></div>
+                </div>
+            </div>
+
+            <div class="question">
+                <label class="question-label">Q5. Are you experiencing hair thinning on your head?</label>
+                <div class="options">
+                    <div class="option"><input type="radio" name="hair_loss" value="yes_significant" id="loss_s"><label for="loss_s">Yes, significant thinning</label></div>
+                    <div class="option"><input type="radio" name="hair_loss" value="yes_mild" id="loss_m"><label for="loss_m">Yes, a little bit</label></div>
+                    <div class="option"><input type="radio" name="hair_loss" value="no" id="loss_n"><label for="loss_n">No, hair is fine</label></div>
+                </div>
+            </div>
+
+            <div class="question">
+                <label class="question-label">Q6. Do you have dark patches of skin?</label>
+                <div class="options">
+                    <div class="option"><input type="radio" name="skin_darkening" value="yes" id="skin_y"><label for="skin_y">Yes, I've noticed patches</label></div>
+                    <div class="option"><input type="radio" name="skin_darkening" value="no" id="skin_n"><label for="skin_n">No, nothing</label></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">⚖️ Weight & Overall Health</h2>
+            <div class="question">
+                <label class="question-label">Q7. Is it hard to lose weight, or gaining easily?</label>
+                <div class="options">
+                    <div class="option"><input type="radio" name="weight_difficulty" value="yes_significant" id="w_s"><label for="w_s">Yes, very difficult</label></div>
+                    <div class="option"><input type="radio" name="weight_difficulty" value="yes_moderate" id="w_m"><label for="w_m">Yes, somewhat difficult</label></div>
+                    <div class="option"><input type="radio" name="weight_difficulty" value="no" id="w_n"><label for="w_n">No, I manage easily</label></div>
+                </div>
+            </div>
+
+            <div class="question">
+                <label class="question-label">Q8. Insulin resistance or diabetes?</label>
+                <div class="options">
+                    <div class="option"><input type="radio" name="insulin_resistance" value="yes_diagnosed" id="i_y"><label for="i_y">Yes, diagnosed</label></div>
+                    <div class="option"><input type="radio" name="insulin_resistance" value="borderline" id="i_b"><label for="i_b">Borderline/Pre-diabetic</label></div>
+                    <div class="option"><input type="radio" name="insulin_resistance" value="no" id="i_n"><label for="i_n">No, blood sugar normal</label></div>
+                </div>
+            </div>
+
+            <div class="question">
+                <label class="question-label">Q9. Trouble getting pregnant?</label>
+                <div class="options">
+                    <div class="option"><input type="radio" name="fertility_issues" value="yes_trying" id="f_t"><label for="f_t">Yes, over a year</label></div>
+                    <div class="option"><input type="radio" name="fertility_issues" value="yes_miscarriage" id="f_m"><label for="f_m">Yes, had miscarriages</label></div>
+                    <div class="option"><input type="radio" name="fertility_issues" value="no" id="f_n"><label for="f_n">No, or not trying</label></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">🩺 Previous Tests (If Any)</h2>
+            <div class="question">
+                <label class="question-label">Q10. Ultrasound show polycystic ovaries?</label>
+                <div class="options">
+                    <div class="option"><input type="radio" name="ultrasound_pco" value="yes" id="u_y"><label for="u_y">Yes</label></div>
+                    <div class="option"><input type="radio" name="ultrasound_pco" value="no" id="u_n"><label for="u_n">No</label></div>
+                    <div class="option"><input type="radio" name="ultrasound_pco" value="unknown" id="u_u"><label for="u_u">I don't know</label></div>
+                </div>
+            </div>
+
+            <div class="question">
+                <label class="question-label">Q11. Blood tests show high androgens?</label>
+                <div class="options">
+                    <div class="option"><input type="radio" name="elevated_androgens" value="yes" id="a_y"><label for="a_y">Yes</label></div>
+                    <div class="option"><input type="radio" name="elevated_androgens" value="no" id="a_n"><label for="a_n">No</label></div>
+                    <div class="option"><input type="radio" name="elevated_androgens" value="unknown" id="a_u"><label for="a_u">I don't know</label></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="submit-section">
+            <button type="submit" id="submitBtn" class="btn btn-primary btn-lg">Get My Results! 🎯</button>
+            <div class="loader"></div>
+        </div>
+    </form>
+
+    <div class="result-container" id="resultContainer"></div>
+</div>
+
+<script>
+document.getElementById('healthForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const requiredQuestions = [
+        'cycle_pattern', 'irregular_duration', 'hirsutism', 'acne', 'hair_loss',
+        'skin_darkening', 'weight_difficulty', 'insulin_resistance', 'fertility_issues',
+        'ultrasound_pco', 'elevated_androgens'
+    ];
+    
+    let allAnswered = true;
+    const formData = {};
+    
+    requiredQuestions.forEach(question => {
+        const answer = document.querySelector(`input[name="${question}"]:checked`);
+        if (!answer) { allAnswered = false; } else { formData[question] = answer.value; }
+    });
+    
+    if (!allAnswered) { alert('Please answer all questions before submitting. 😊'); return; }
+    
+    document.querySelector('.loader').style.display = 'block';
+    document.getElementById('submitBtn').disabled = true;
+    
+    fetch('/analyze_health', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+    })
+    .then(res => res.json())
+    .then(data => {
+        document.querySelector('.loader').style.display = 'none';
+        document.getElementById('submitBtn').disabled = false;
+        displayResults(data);
+        document.getElementById('resultContainer').scrollIntoView({ behavior: 'smooth' });
+    });
+});
+
+function displayResults(data) {
+    const container = document.getElementById('resultContainer');
+    let resultHTML = `
+        <div style="text-align:center;">
+            <h2 style="color: ${data.color}; font-weight:800;">${data.risk_level}</h2>
+            <p style="color:white; font-size:1.2rem;">Score: ${data.risk_score}</p>
+        </div>
+        <div style="background:rgba(255,255,255,0.1); padding:20px; border-radius:10px; color:white; margin:20px 0;">
+            ${data.message}
+        </div>
+    `;
+    if (data.risk_factors) {
+        resultHTML += `<h3 style="color:white;">Factors:</h3><ul class="result-list">` + 
+                      data.risk_factors.map(f => `<li>${f}</li>`).join('') + `</ul>`;
+    }
+    container.innerHTML = resultHTML;
+    container.style.display = 'block';
+}
+</script>
+{% endblock %}
