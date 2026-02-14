@@ -47,16 +47,16 @@ It combines image checking and health questions to give better results.
 <table align="center" border="1" cellpadding="6">
   <tr>
     <td align="center">
-      <img src="static/images/docpatient.jpg" width="250"><br/>
+      <img src="images/home.png" width="250"><br/>
       <b>Home Page</b>
     </td>
     <td align="center">
-      <img src="images/analysis_result.png" width="250"><br/>
-      <b>Result with Probability</b>
+      <img src="images/questionarries.png" width="250"><br/>
+      <b>Health Questionnaire</b>
     </td>
     <td align="center">
-      <img src="images/health_check.png" width="250"><br/>
-      <b>Health Questionnaire</b>
+      <img src="images/about.png" width="250"><br/>
+      <b>About Us</b>
     </td>
   </tr>
 </table>
