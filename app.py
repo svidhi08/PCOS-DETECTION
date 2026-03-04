@@ -18,14 +18,9 @@ from tensorflow.keras.applications.mobilenet import preprocess_input
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1' 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-# Prevent TF from pre-allocating all memory at once (crucial for Free Tier hosting)
-try:
-    tf.config.set_logical_device_configuration(
-        tf.config.list_physical_devices('CPU')[0],
-        [tf.config.LogicalDeviceConfiguration(memory_limit=450)]
-    )
-except Exception as e:
-    pass
+# Limit TensorFlow CPU threads (VERY IMPORTANT for Render Free tier)
+tf.config.threading.set_intra_op_parallelism_threads(1)
+tf.config.threading.set_inter_op_parallelism_threads(1)
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
