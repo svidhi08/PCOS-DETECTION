@@ -9,6 +9,7 @@ from flask import Flask, request, render_template, jsonify
 from werkzeug.utils import secure_filename
 import logging
 import tensorflow as tf
+from tensorflow.keras.applications.mobilenet import preprocess_input
 
 # Force TensorFlow to use only CPU and minimal memory
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1' 
@@ -63,11 +64,11 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def model_predict(img_path, model):
-    """Make prediction on the image"""
     try:
-        img = load_img(img_path, target_size=(224, 224), interpolation='nearest')
-        x = img_to_array(img) / 255.0
+        img = load_img(img_path, target_size=(224, 224))
+        x = img_to_array(img)
         x = np.expand_dims(x, axis=0)
+        x = preprocess_input(x)  # Use this instead of / 255.0
         preds = model.predict(x, verbose=0)
         return preds
     except Exception as e:
@@ -132,6 +133,9 @@ def upload():
         result = get_prediction_result(y_class[0])
         result['confidence'] = f"{confidence * 100:.2f}%"
         
+        if os.path.exists(file_path):
+            os.remove(file_path)
+            
         return jsonify(result)
     
     except Exception as e:
