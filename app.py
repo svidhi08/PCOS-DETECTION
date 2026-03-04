@@ -15,7 +15,7 @@ from tensorflow.keras.applications.mobilenet import preprocess_input
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1' 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-# This line prevents TF from pre-allocating all memory at once
+# This line prevents TF from pre-allocating all memory at once for Render Free Tier
 try:
     tf.config.set_logical_device_configuration(
         tf.config.list_physical_devices('CPU')[0],
@@ -40,6 +40,7 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 # LOAD TENSORFLOW MODEL (from Jupyter notebook)
 # ============================================================
 MODEL_PATH = "model/bestmodel.h5"
+# compile=False avoids version mismatch errors in the optimizer
 model = load_model(MODEL_PATH, compile=False)
 logger.info("✅ TensorFlow Model loaded successfully!")
 
@@ -48,7 +49,7 @@ logger.info("✅ TensorFlow Model loaded successfully!")
 # ============================================================
 try:
     ml_model = joblib.load("model/pcos_model.pkl")
-    preprocessor = joblib.load("model/preprocessor.pkl")  # Only preprocessor now
+    preprocessor = joblib.load("model/preprocessor.pkl")
     logger.info("✅ Health Questionnaire Model loaded successfully!")
 except Exception as e:
     logger.error(f"❌ Error loading ML models: {e}")
@@ -56,7 +57,7 @@ except Exception as e:
     ml_model = None
     preprocessor = None
 
-logger.info("💻 Starting Flask app at: http://127.0.0.1:5000/")
+logger.info("💻 Starting Flask app...")
 
 # HELPER FUNCTIONS
 def allowed_file(filename):
@@ -64,11 +65,14 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def model_predict(img_path, model):
+    """Make prediction on the image with MobileNet preprocessing"""
     try:
+        # Load image and resize to 224x224 for MobileNet
         img = load_img(img_path, target_size=(224, 224))
         x = img_to_array(img)
         x = np.expand_dims(x, axis=0)
-        x = preprocess_input(x)  # Use this instead of / 255.0
+        # Use official MobileNet preprocessing (scales pixels -1 to 1)
+        x = preprocess_input(x)
         preds = model.predict(x, verbose=0)
         return preds
     except Exception as e:
@@ -77,6 +81,7 @@ def model_predict(img_path, model):
 
 def get_prediction_result(val):
     """Map prediction value to result with confidence"""
+    # Note: val=0 typically means infected/PCOS in alphabetical folder sorting
     if val == 0:
         return {
             "result": "PCOS Detected",
@@ -125,14 +130,18 @@ def upload():
         file_path = os.path.join(UPLOAD_FOLDER, filename)
         f.save(file_path)
         
+        # Perform Image Prediction
         preds = model_predict(file_path, model)
         y_class = ((preds > 0.5) + 0).ravel()
         pred_value = float(preds[0][0])
+        
+        # Calculate confidence based on which class was predicted
         confidence = pred_value if y_class[0] == 1 else 1 - pred_value
         
         result = get_prediction_result(y_class[0])
         result['confidence'] = f"{confidence * 100:.2f}%"
         
+        # Cleanup: Remove file after prediction to save space on Render
         if os.path.exists(file_path):
             os.remove(file_path)
             
@@ -156,11 +165,11 @@ def analyze_health():
         # Convert form data to DataFrame
         input_df = pd.DataFrame([form_data])
 
-        # Preprocess input
+        # Preprocess input (matches your Jupyter notebook training)
         input_processed = preprocessor.transform(input_df)
 
         # Predict probability
-        prob = ml_model.predict_proba(input_processed)[0][1]  # probability of PCOS
+        prob = ml_model.predict_proba(input_processed)[0][1]
         risk_score = round(prob * 100, 1)
 
         # Determine risk level and color
@@ -177,7 +186,7 @@ def analyze_health():
             color = "#51cf66"
             message = "Low risk for PCOS."
 
-        # Identify risk factors from form data
+        # Logic for identifying risk factors (optional but helpful)
         risk_factors = []
         if form_data.get('cycle_pattern') in ['irregular', 'rare', 'absent']:
             risk_factors.append("Irregular menstrual cycles")
@@ -229,5 +238,6 @@ def internal_error(e):
 
 # RUN APP
 if __name__ == '__main__':
+    # Use PORT provided by Render environment
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
