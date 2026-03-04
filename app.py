@@ -27,7 +27,7 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 # LOAD TENSORFLOW MODEL (from Jupyter notebook)
 # ============================================================
 MODEL_PATH = "model/bestmodel.h5"
-model = load_model(MODEL_PATH)
+model = load_model(MODEL_PATH, compile=False)
 logger.info("✅ TensorFlow Model loaded successfully!")
 
 # ============================================================
