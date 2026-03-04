@@ -11,17 +11,20 @@ import logging
 import tensorflow as tf
 from tensorflow.keras.applications.mobilenet import preprocess_input
 
-# Force TensorFlow to use only CPU and minimal memory
+# ============================================================
+# ENVIRONMENT & MEMORY CONFIG
+# ============================================================
+# Force TensorFlow to use only CPU and minimal memory for deployment compatibility
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1' 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-# This line prevents TF from pre-allocating all memory at once for Render Free Tier
+# Prevent TF from pre-allocating all memory at once (crucial for Free Tier hosting)
 try:
     tf.config.set_logical_device_configuration(
         tf.config.list_physical_devices('CPU')[0],
         [tf.config.LogicalDeviceConfiguration(memory_limit=450)]
     )
-except:
+except Exception as e:
     pass
 
 logging.basicConfig(level=logging.INFO)
@@ -31,47 +34,48 @@ app = Flask(__name__)
 
 UPLOAD_FOLDER = 'uploads'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
-MAX_FILE_SIZE = 16 * 1024 * 1024  # 16MB
+MAX_FILE_SIZE = 16 * 1024 * 1024  # 16MB limit
 app.config['MAX_CONTENT_LENGTH'] = MAX_FILE_SIZE
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 # ============================================================
-# LOAD TENSORFLOW MODEL (from Jupyter notebook)
+# LOAD MODELS
 # ============================================================
 MODEL_PATH = "model/bestmodel.h5"
-# compile=False avoids version mismatch errors in the optimizer
-model = load_model(MODEL_PATH, compile=False)
-logger.info("✅ TensorFlow Model loaded successfully!")
-
-# ============================================================
-# LOAD ML MODELS FOR HEALTH QUESTIONNAIRE
-# ============================================================
 try:
+    # compile=False avoids version mismatch errors in the optimizer
+    model = load_model(MODEL_PATH, compile=False)
+    logger.info("✅ TensorFlow Model loaded successfully!")
+except Exception as e:
+    logger.error(f"❌ Error loading Deep Learning model: {e}")
+    model = None
+
+try:
+    # Load ML models for the health questionnaire analysis
     ml_model = joblib.load("model/pcos_model.pkl")
     preprocessor = joblib.load("model/preprocessor.pkl")
     logger.info("✅ Health Questionnaire Model loaded successfully!")
 except Exception as e:
     logger.error(f"❌ Error loading ML models: {e}")
-    logger.warning("⚠️  Health questionnaire will not be available")
     ml_model = None
     preprocessor = None
 
-logger.info("💻 Starting Flask app...")
-
+# ============================================================
 # HELPER FUNCTIONS
+# ============================================================
 def allowed_file(filename):
-    """Check if file extension is allowed"""
+    """Check if file extension is among the allowed types"""
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def model_predict(img_path, model):
-    """Make prediction on the image with MobileNet preprocessing"""
+    """
+    MobileNet requires 224x224 input and specific pixel scaling.
+    """
     try:
-        # Load image and resize to 224x224 for MobileNet
         img = load_img(img_path, target_size=(224, 224))
         x = img_to_array(img)
         x = np.expand_dims(x, axis=0)
-        # Use official MobileNet preprocessing (scales pixels -1 to 1)
         x = preprocess_input(x)
         preds = model.predict(x, verbose=0)
         return preds
@@ -80,24 +84,51 @@ def model_predict(img_path, model):
         raise
 
 def get_prediction_result(val):
-    """Map prediction value to result with confidence"""
-    # Note: val=0 typically means infected/PCOS in alphabetical folder sorting
+    """Map prediction value to result data for the frontend"""
+    # val=0 usually indicates PCOS (Positive) in binary classification folders
     if val == 0:
         return {
             "result": "PCOS Detected",
             "status": "infected",
-            "message": "The ultrasound shows signs of PCOS. Please consult with a healthcare professional for proper diagnosis and treatment.",
-            "color": "#ff6b6b"
+            "message": "The ultrasound shows characteristic signs of PCOS. Please consult with a healthcare professional.",
+            "color": "#ff6b6b",
+            "symptoms": [
+                "Irregular or missed menstrual periods", 
+                "Excess facial and body hair (hirsutism)", 
+                "Severe acne or oily skin",
+                "Thinning hair on the scalp",
+                "Weight gain or difficulty losing weight"
+            ],
+            "precautions": [
+                "Schedule a consultation with a Gynecologist", 
+                "Maintain a balanced, low-sugar diet", 
+                "Engage in regular physical activity",
+                "Monitor your blood sugar and insulin levels"
+            ],
+            "advice": "Early diagnosis can help manage symptoms effectively and prevent long-term complications."
         }
     else:
         return {
             "result": "No PCOS Detected",
             "status": "not_infected",
-            "message": "The ultrasound appears normal. However, if you have symptoms, please consult a healthcare professional.",
-            "color": "#51cf66"
+            "message": "The ultrasound scan appears normal with no visible cystic patterns.",
+            "color": "#51cf66",
+            "watch_for": [
+                "Changes in menstrual cycle frequency", 
+                "Sudden appearance of hormonal acne", 
+                "Unexplained changes in weight"
+            ],
+            "healthy_tips": [
+                "Stay hydrated and maintain a high-fiber diet", 
+                "Aim for 7-8 hours of quality sleep", 
+                "Practice stress management through yoga or meditation"
+            ],
+            "advice": "Maintain a healthy lifestyle for hormonal balance."
         }
 
-
+# ============================================================
+# ROUTES
+# ============================================================
 @app.route('/', methods=['GET'])
 def index():
     return render_template('index.html')
@@ -124,24 +155,28 @@ def upload():
         if f.filename == '':
             return jsonify({'error': 'No file selected'}), 400
         if not allowed_file(f.filename):
-            return jsonify({'error': 'Invalid file type. Please upload PNG, JPG, or JPEG files only.'}), 400
+            return jsonify({'error': 'Invalid file type (PNG, JPG, JPEG only)'}), 400
         
         filename = secure_filename(f.filename)
         file_path = os.path.join(UPLOAD_FOLDER, filename)
         f.save(file_path)
         
-        # Perform Image Prediction
+        # Prediction
         preds = model_predict(file_path, model)
-        y_class = ((preds > 0.5) + 0).ravel()
         pred_value = float(preds[0][0])
         
-        # Calculate confidence based on which class was predicted
-        confidence = pred_value if y_class[0] == 1 else 1 - pred_value
-        
-        result = get_prediction_result(y_class[0])
+        # Classification Logic
+        if pred_value < 0.5:
+            y_class_idx = 0 
+            confidence = 1 - pred_value 
+        else:
+            y_class_idx = 1
+            confidence = pred_value
+
+        result = get_prediction_result(y_class_idx)
         result['confidence'] = f"{confidence * 100:.2f}%"
         
-        # Cleanup: Remove file after prediction to save space on Render
+        # Cleanup
         if os.path.exists(file_path):
             os.remove(file_path)
             
@@ -149,95 +184,73 @@ def upload():
     
     except Exception as e:
         logger.error(f"Error in prediction endpoint: {e}")
-        return jsonify({'error': 'An error occurred during prediction. Please try again.'}), 500
+        return jsonify({'error': 'An error occurred during prediction.'}), 500
 
-# HEALTH QUESTIONNAIRE
 @app.route('/analyze_health', methods=['POST'])
 def analyze_health():
+    """Processes the questionnaire data using the Scikit-Learn model"""
     try:
         if ml_model is None or preprocessor is None:
-            return jsonify({'error': 'Health model not loaded'}), 500
+            return jsonify({'error': 'Health analysis model not available'}), 500
 
         form_data = request.get_json()
         if not form_data:
             return jsonify({'error': 'No data received'}), 400
 
-        # Convert form data to DataFrame
+        # DataFrame conversion
         input_df = pd.DataFrame([form_data])
 
-        # Preprocess input (matches your Jupyter notebook training)
+        # Processing & Prediction
         input_processed = preprocessor.transform(input_df)
-
-        # Predict probability
         prob = ml_model.predict_proba(input_processed)[0][1]
         risk_score = round(prob * 100, 1)
 
-        # Determine risk level and color
+        # Risk Level Mapping
         if risk_score >= 70:
-            risk_level = "High Risk"
-            color = "#ff6b6b"
-            message = "Higher likelihood of PCOS. Please consult a healthcare professional."
+            risk_level, color, message = "High Risk", "#ff6b6b", "Higher likelihood of PCOS symptoms. Clinical consultation recommended."
         elif risk_score >= 40:
-            risk_level = "Moderate Risk"
-            color = "#ffa94d"
-            message = "Moderate risk indicators for PCOS. Consider consulting a healthcare provider."
+            risk_level, color, message = "Moderate Risk", "#ffa94d", "Some indicators present. Monitor your symptoms closely."
         else:
-            risk_level = "Low Risk"
-            color = "#51cf66"
-            message = "Low risk for PCOS."
+            risk_level, color, message = "Low Risk", "#51cf66", "Low correlation with typical PCOS risk factors."
 
-        # Logic for identifying risk factors (optional but helpful)
+        # Factor Extraction for UI
         risk_factors = []
-        if form_data.get('cycle_pattern') in ['irregular', 'rare', 'absent']:
-            risk_factors.append("Irregular menstrual cycles")
-        if form_data.get('hirsutism', '').startswith('yes'):
-            risk_factors.append("Excess hair growth")
-        if form_data.get('acne', '').startswith('yes'):
-            risk_factors.append("Acne or oily skin")
-        if form_data.get('weight_difficulty', '').startswith('yes'):
-            risk_factors.append("Weight management difficulties")
-        if form_data.get('insulin_resistance') == 'yes_diagnosed':
-            risk_factors.append("Insulin resistance or diabetes")
-        if form_data.get('ultrasound_pco') == 'yes':
-            risk_factors.append("Polycystic ovaries on ultrasound")
-
-        recommendations = [
-            "Maintain a healthy lifestyle with regular exercise",
-            "Monitor menstrual cycle",
-            "Consult a healthcare provider if concerned"
-        ]
+        if form_data.get('cycle_pattern') != 'regular': risk_factors.append("Irregular Cycles")
+        if 'yes' in str(form_data.get('hirsutism', '')).lower(): risk_factors.append("Excessive Hair Growth")
+        if 'yes' in str(form_data.get('acne', '')).lower(): risk_factors.append("Hormonal Acne")
 
         return jsonify({
             "risk_level": risk_level,
             "risk_score": risk_score,
             "color": color,
             "message": message,
-            "confidence": f"{prob*100:.1f}%",
+            "confidence": f"{risk_score}%",
             "risk_factors": risk_factors,
-            "recommendations": recommendations,
-            "next_steps": "Consult a healthcare professional if you are concerned about your results."
+            "recommendations": [
+                "Consult a healthcare professional",
+                "Maintain a consistent sleep schedule",
+                "Regular physical activity (30 mins/day)"
+            ]
         })
 
     except Exception as e:
-        logger.error(f"Error in health analysis: {e}", exc_info=True)
-        return jsonify({'error': 'An error occurred during health analysis.'}), 500
+        logger.error(f"Error in health analysis: {e}")
+        return jsonify({'error': 'Analysis failed. Please ensure all questions are answered.'}), 500
 
+# ============================================================
 # ERROR HANDLERS
+# ============================================================
 @app.errorhandler(413)
 def too_large(e):
-    return jsonify({'error': 'File is too large. Maximum size is 16MB.'}), 413
+    return jsonify({'error': 'File too large (Max 16MB)'}), 413
 
 @app.errorhandler(404)
 def not_found(e):
     return render_template('index.html'), 404
 
-@app.errorhandler(500)
-def internal_error(e):
-    logger.error(f"Internal server error: {e}")
-    return jsonify({'error': 'Internal server error. Please try again later.'}), 500
-
-# RUN APP
+# ============================================================
+# APP EXECUTION
+# ============================================================
 if __name__ == '__main__':
-    # Use PORT provided by Render environment
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)

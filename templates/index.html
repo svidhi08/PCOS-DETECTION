@@ -5,34 +5,36 @@
 
 <div id="crousel-container">
     <div id="carouselExampleSlidesOnly" class="carousel slide" data-bs-ride="carousel">
-        <div class="carousel-inner">
-            <div class="carousel-item active">
-                <img src="{{ url_for('static', filename='images/docpatient.jpg') }}" class="d-block w-100" alt="Healthcare Professional">
+        <div class="carousel-inner h-100">
+            <div class="carousel-item active h-100">
+                <img src="{{ url_for('static', filename='images/docpatient.png') }}" class="d-block w-100 h-100" alt="Healthcare Professional">
+                
+                <div class="hero-text">
+                    <h1>Empowering Women Through <br> Advanced PCOS Diagnostics</h1>
+                    <p>Accurate screening powered by AI and Clinical Expertise.</p>
+                </div>
             </div>
         </div>
     </div>
-    <div>
-        <h1>Empowering Women Through <br> Advanced PCOS Diagnostics</h1>
-    </div>
 </div>
 
-<div class="info-section">
-    <div class="info-cards">
-        <div class="info-card">
-            <div class="info-icon">🩺</div>
-            <h3>Understanding PCOS</h3>
-            <p>Polycystic Ovary Syndrome (PCOS) is a complex endocrine disorder affecting 1 in 10 women globally. Early detection is critical for managing long-term reproductive and metabolic health.</p>
-        </div>
-        <div class="info-card">
-            <div class="info-icon">🔬</div>
-            <h3>AI-Driven Analysis</h3>
-            <p>Utilizing state-of-the-art Deep Learning, our system analyzes ultrasound scans to provide immediate screening results with high precision and clinical reliability.</p>
-        </div>
-        <div class="info-card">
-            <div class="info-icon">📈</div>
-            <h3>Proactive Care</h3>
-            <p>Early diagnosis allows for personalized lifestyle interventions and medical guidance. We bridge the gap between initial concern and clinical consultation.</p>
-        </div>
+<div class="features-section">
+    <div class="feature-box">
+        <div class="feature-icon">🌸</div>
+        <h3>Understanding PCOS</h3>
+        <p>PCOS is a common hormonal condition that affects many women. Catching it early is the best way to take care of your health and keep your body in balance for the future.</p>
+    </div>
+
+    <div class="feature-box">
+        <div class="feature-icon">🤖</div>
+        <h3>Smart AI Check</h3>
+        <p>Our smart system looks at ultrasound images to find signs of PCOS instantly. It’s like having an expert eye give you a quick, reliable head-start on your health journey.</p>
+    </div>
+
+    <div class="feature-box">
+        <div class="feature-icon">✨</div>
+        <h3>Take Control Today</h3>
+        <p>Knowing your status helps you make the right choices for your lifestyle. We’re here to help you move from "worrying" to "taking action" with confidence.</p>
     </div>
 </div>
 
@@ -69,26 +71,39 @@
             const reader = new FileReader();
             reader.onload = function(event) {
                 const preview = document.getElementById('imagePreview');
-                preview.innerHTML = `<img src="${event.target.result}" alt="Preview">`;
+                preview.innerHTML = `<img src="${event.target.result}" alt="Preview" style="max-width: 100%; border-radius: 10px;">`;
             };
             reader.readAsDataURL(file);
         }
     });
 
-    // Prediction Logic
+    function createListSection(title, items) {
+        if (!items || items.length === 0) return '';
+        let listHTML = `
+            <div style="margin-top: 20px; text-align: left; padding: 15px; background: rgba(255, 255, 255, 0.05); border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.1);">
+                <h5 style="color: white; margin-bottom: 10px; font-weight: 600;">${title}</h5>
+                <ul style="list-style: none; padding: 0; margin: 0;">`;
+        items.forEach(item => {
+            listHTML += `
+                <li style="color: rgba(255, 255, 255, 0.8); padding: 5px 0 5px 25px; position: relative; font-size: 0.95rem;">
+                    <span style="position: absolute; left: 0; color: #66ff99;">✓</span> ${item}
+                </li>`;
+        });
+        listHTML += `</ul></div>`;
+        return listHTML;
+    }
+
     document.getElementById('btn-predict').addEventListener('click', function() {
         const fileInput = document.getElementById('imageUpload');
         const file = fileInput.files[0];
-
         if (!file) {
             alert('Please select a scan for analysis.');
             return;
         }
-
         const formData = new FormData();
         formData.append('file', file);
-
         document.querySelector('.loader').style.display = 'block';
+        document.getElementById('btn-predict').style.display = 'none';
         document.getElementById('result').innerHTML = '';
 
         fetch('/predict', {
@@ -98,20 +113,33 @@
         .then(response => response.json())
         .then(data => {
             document.querySelector('.loader').style.display = 'none';
-            
-            // Build Clinical Result Display
+            document.getElementById('btn-predict').style.display = 'inline-block';
+            if (data.error) {
+                document.getElementById('result').innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+                return;
+            }
             let resultHTML = `
-                <div class="p-4 rounded-4" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);">
-                    <h2 style="color: ${data.color || 'white'}; font-weight: 800;">${data.result}</h2>
-                    <span class="badge bg-light text-dark mb-3">Confidence Level: ${data.confidence}</span>
-                    <p class="text-white opacity-75">${data.message}</p>
-                </div>
+                <div class="p-4 rounded-4" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); max-width: 800px; margin: 0 auto;">
+                    <h2 style="color: ${data.color || 'white'}; font-weight: 800; margin-bottom: 5px;">${data.result}</h2>
+                    <div class="mb-3">
+                        <span class="badge bg-light text-dark">Confidence Level: ${data.confidence}</span>
+                    </div>
+                    <p class="text-white opacity-75" style="font-size: 1.1rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px;">${data.message}</p>
             `;
+            resultHTML += createListSection("🔍 Symptoms to Note", data.symptoms);
+            resultHTML += createListSection("🩺 Watch For These Signs", data.watch_for);
+            resultHTML += createListSection("💊 Recommended Precautions", data.precautions);
+            resultHTML += createListSection("💚 Healthy Living Tips", data.healthy_tips);
+            if (data.advice) {
+                resultHTML += `<p style="margin-top: 20px; color: white; font-style: italic; font-size: 0.9rem; opacity: 0.8;">💡 <strong>Advice:</strong> ${data.advice}</p>`;
+            }
+            resultHTML += `</div>`;
             document.getElementById('result').innerHTML = resultHTML;
         })
         .catch(err => {
             document.querySelector('.loader').style.display = 'none';
-            console.error(err);
+            document.getElementById('btn-predict').style.display = 'inline-block';
+            document.getElementById('result').innerHTML = `<div class="alert alert-danger">Server Error. Please try again.</div>`;
         });
     });
 </script>
