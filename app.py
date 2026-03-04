@@ -8,8 +8,20 @@ from tensorflow.keras.utils import load_img, img_to_array
 from flask import Flask, request, render_template, jsonify
 from werkzeug.utils import secure_filename
 import logging
+import tensorflow as tf
 
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+# Force TensorFlow to use only CPU and minimal memory
+os.environ['CUDA_VISIBLE_DEVICES'] = '-1' 
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+
+# This line prevents TF from pre-allocating all memory at once
+try:
+    tf.config.set_logical_device_configuration(
+        tf.config.list_physical_devices('CPU')[0],
+        [tf.config.LogicalDeviceConfiguration(memory_limit=450)]
+    )
+except:
+    pass
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
