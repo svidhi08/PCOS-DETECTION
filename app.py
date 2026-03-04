@@ -41,6 +41,9 @@ MODEL_PATH = "model/bestmodel.h5"
 try:
     # compile=False avoids version mismatch errors in the optimizer
     model = load_model(MODEL_PATH, compile=False)
+    # Warm up model once to avoid first-request delay
+    dummy = np.zeros((1, 224, 224, 3))
+    model(dummy, training=False)
     logger.info("✅ TensorFlow Model loaded successfully!")
 except Exception as e:
     logger.error(f"❌ Error loading Deep Learning model: {e}")
@@ -64,15 +67,15 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def model_predict(img_path, model):
-    """
-    MobileNet requires 224x224 input and specific pixel scaling.
-    """
     try:
         img = load_img(img_path, target_size=(224, 224))
         x = img_to_array(img)
         x = np.expand_dims(x, axis=0)
         x = preprocess_input(x)
-        preds = model.predict(x, verbose=0)
+
+        # Disable training mode explicitly (important)
+        preds = model(x, training=False).numpy()
+
         return preds
     except Exception as e:
         logger.error(f"Error during prediction: {e}")
